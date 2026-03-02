@@ -2,16 +2,19 @@ smp := 16
 mem := 4G
 ovmfdir := OVMF
 espdir := esp
-kernel := $(espdir)/kernel.efi
+kernel := $(espdir)/EFI/BOOT/BOOTX64.EFI
 
 .PHONY: build clean run
 
 build: $(kernel)
 
-$(kernel):
-	mkdir -p $(espdir)
+posix-uefi:
+	git submodule update --init --recursive posix-uefi
+
+$(kernel): posix-uefi
+	mkdir -p $(espdir)/EFI/BOOT
 	$(MAKE) -C src
-	cp src/kernel.efi $(espdir)/
+	cp src/kernel.efi $(kernel)
 
 clean:
 	$(MAKE) -C src clean
@@ -26,5 +29,4 @@ run: $(kernel)
 		-drive if=pflash,format=raw,readonly=on,file="$(ovmfdir)/OVMF_CODE.fd" \
 		-drive if=pflash,format=raw,file="$(ovmfdir)/OVMF_VARS.fd" \
 		-drive format=raw,file=fat:rw:$(espdir) \
-		-net none \
-		-nographic
+		-net none
